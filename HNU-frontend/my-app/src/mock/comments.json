@@ -1,0 +1,154 @@
+{
+  "1001": [
+    {
+      "id": 5001,
+      "userId": 31,
+      "userNickname": "小彬",
+      "content": "这车什么成色？有图吗？",
+      "likeCount": 2,
+      "isLiked": false,
+      "createTime": "2025-01-05T12:10:00",
+      "replies": [
+        {
+          "id": 5002,
+          "userId": 11,
+          "userNickname": "张三",
+          "parentUserNickname": "小彬",
+          "content": "成色九成新，私信发图。",
+          "likeCount": 1,
+          "isLiked": false,
+          "createTime": "2025-01-05T12:20:00",
+          "replies": []
+        }
+      ]
+    }
+  ],
+  "1002": [
+    {
+      "id": 5003,
+      "userId": 32,
+      "userNickname": "小唐",
+      "content": "能便宜点吗？",
+      "likeCount": 3,
+      "isLiked": false,
+      "createTime": "2025-01-05T11:15:00",
+      "replies": []
+    },
+    {
+      "id": 5004,
+      "userId": 33,
+      "userNickname": "小安",
+      "content": "请问接口类型和分辨率？",
+      "likeCount": 1,
+      "isLiked": false,
+      "createTime": "2025-01-05T11:25:00",
+      "replies": []
+    }
+  ],
+  "1003": [
+    {
+      "id": 5005,
+      "userId": 34,
+      "userNickname": "小罗",
+      "content": "我用的校内DNS，速度还可以。",
+      "likeCount": 2,
+      "isLiked": false,
+      "createTime": "2025-01-05T12:35:00",
+      "replies": []
+    }
+  ],
+  "1004": [
+    {
+      "id": 5006,
+      "userId": 35,
+      "userNickname": "小轩",
+      "content": "图书馆公众号里可以预约，提前一天。",
+      "likeCount": 4,
+      "isLiked": false,
+      "createTime": "2025-01-05T13:15:00",
+      "replies": []
+    }
+  ],
+  "1005": [
+    {
+      "id": 5007,
+      "userId": 36,
+      "userNickname": "小洁",
+      "content": "我也在备考，已私信。",
+      "likeCount": 5,
+      "isLiked": false,
+      "createTime": "2025-01-05T14:50:00",
+      "replies": []
+    }
+  ],
+  "1006": [
+    {
+      "id": 5008,
+      "userId": 37,
+      "userNickname": "小杰",
+      "content": "周六可以，带我一个。",
+      "likeCount": 2,
+      "isLiked": false,
+      "createTime": "2025-01-05T15:30:00",
+      "replies": []
+    }
+  ],
+  "1007": [
+    {
+      "id": 5009,
+      "userId": 38,
+      "userNickname": "小可",
+      "content": "好看！请问在哪个门？",
+      "likeCount": 6,
+      "isLiked": false,
+      "createTime": "2025-01-05T16:20:00",
+      "replies": []
+    }
+  ],
+  "1008": [
+    {
+      "id": 5010,
+      "userId": 39,
+      "userNickname": "小许",
+      "content": "今天我也去试试。",
+      "likeCount": 1,
+      "isLiked": false,
+      "createTime": "2025-01-05T16:45:00",
+      "replies": []
+    }
+  ],
+  "1009": [
+    {
+      "id": 5011,
+      "userId": 40,
+      "userNickname": "小白",
+      "content": "可以发一下整理的重点吗？",
+      "likeCount": 7,
+      "isLiked": false,
+      "createTime": "2025-01-05T17:10:00",
+      "replies": []
+    }
+  ],
+  "1010": [
+    {
+      "id": 5012,
+      "userId": 41,
+      "userNickname": "小康",
+      "content": "谢谢分享，已收藏。",
+      "likeCount": 3,
+      "isLiked": false,
+      "createTime": "2025-01-05T17:30:00",
+      "replies": []
+    }
+  ],
+  "1011": [],
+  "1012": [],
+  "1013": [],
+  "1014": [],
+  "1015": [],
+  "1016": [],
+  "1017": [],
+  "1018": [],
+  "1019": [],
+  "1020": []
+}
