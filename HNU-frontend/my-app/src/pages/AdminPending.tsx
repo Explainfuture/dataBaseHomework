@@ -7,7 +7,7 @@ import type { PendingUser } from '../api/types'
 export default function AdminPendingPage() {
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<PendingUser[]>([])
-  const [mode, setMode] = useState<'pending' | 'all'>('pending')
+  const [mode, setMode] = useState<'pending' | 'all'>('all')
   const [actionAlert, setActionAlert] = useState<string | null>(null)
 
   const fetchPending = async () => {

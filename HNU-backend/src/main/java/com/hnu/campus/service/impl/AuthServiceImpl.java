@@ -81,10 +81,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(400, "手机号或密码错误");
         }
         if (!AuthStatus.APPROVED.getCode().equals(user.getAuthStatus())) {
-            throw new BusinessException(403, "账号未通过审核");
-        }
-        if (Boolean.TRUE.equals(user.getIsMuted())) {
-            throw new BusinessException(403, "账号已被禁言");
+            throw new BusinessException(403, "当前帐号未通过申请，请稍等。");
         }
 
         String token = jwtUtil.generateToken(user.getId(), user.getRole());

@@ -1,4 +1,4 @@
-import { Button, Card, Form, Input, message, Typography } from 'antd'
+import { Button, Card, Form, Input, message, Typography, App as AntApp } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ApiResponse } from '../api/client'
@@ -8,6 +8,7 @@ import { useAuth } from '../store/auth'
 export default function LoginPage() {
   const navigate = useNavigate()
   const { setAuth } = useAuth()
+  const { notification } = AntApp.useApp()
 
   const onFinish = async (values: { phone: string; password: string }) => {
     try {
@@ -22,6 +23,14 @@ export default function LoginPage() {
       navigate('/')
     } catch (error) {
       const msg = error instanceof Error ? error.message : '登录失败'
+      if (msg.includes('未通过申请')) {
+        notification.warning({
+          message: '无法登录',
+          description: '当前帐号未通过申请，请稍等。',
+          placement: 'topRight',
+        })
+        return
+      }
       message.error(msg)
     }
   }
