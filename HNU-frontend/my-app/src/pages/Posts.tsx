@@ -1,4 +1,4 @@
-import { Card, Col, Input, List, Row, Select, Space, Tag, Typography, message } from 'antd'
+import { Card, Col, Input, List, Pagination, Row, Select, Space, Tag, Typography, message } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
@@ -21,6 +21,9 @@ export default function PostsPage() {
   const [keyword, setKeyword] = useState('')
   const [categoryId, setCategoryId] = useState<number | undefined>()
   const [useMock, setUseMock] = useState(false)
+  const [page, setPage] = useState(1)
+  const [size, setSize] = useState(10)
+  const [total, setTotal] = useState(0)
 
   const fetchPosts = async () => {
     setLoading(true)
@@ -30,38 +33,46 @@ export default function PostsPage() {
           params: {
             keyword: keyword.trim(),
             categoryId,
-            page: 1,
-            size: 10,
+            page,
+            size,
           },
         })
         const payload = res as unknown as ApiResponse<PostListItem[]>
         const list = payload.data
         if (list.length === 0) {
           setUseMock(true)
-          setPosts(filterMockPosts())
+          const mockList = filterMockPosts()
+          setPosts(mockList.slice((page - 1) * size, page * size))
+          setTotal(mockList.length)
         } else {
           setUseMock(false)
           setPosts(list)
+          setTotal(page * size + (list.length < size ? 0 : size))
         }
       } else {
         const res = await api.get<ApiResponse<PostListItem[]>>('/api/v1/posts', {
-          params: { categoryId, page: 1, size: 10 },
+          params: { categoryId, page, size },
         })
         const payload = res as unknown as ApiResponse<PostListItem[]>
         const list = payload.data
         if (list.length === 0) {
           setUseMock(true)
-          setPosts(filterMockPosts())
+          const mockList = filterMockPosts()
+          setPosts(mockList.slice((page - 1) * size, page * size))
+          setTotal(mockList.length)
         } else {
           setUseMock(false)
           setPosts(list)
+          setTotal(page * size + (list.length < size ? 0 : size))
         }
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : '加载失败'
       message.error(msg)
       setUseMock(true)
-      setPosts(filterMockPosts())
+      const mockList = filterMockPosts()
+      setPosts(mockList.slice((page - 1) * size, page * size))
+      setTotal(mockList.length)
     } finally {
       setLoading(false)
     }
@@ -85,7 +96,7 @@ export default function PostsPage() {
 
   useEffect(() => {
     fetchPosts()
-  }, [categoryId])
+  }, [categoryId, page, size])
 
   useEffect(() => {
     fetchHotPosts()
@@ -128,7 +139,10 @@ export default function PostsPage() {
             <Input.Search
               placeholder="搜索帖子标题或内容"
               allowClear
-              onSearch={() => fetchPosts()}
+              onSearch={() => {
+                setPage(1)
+                fetchPosts()
+              }}
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               style={{ width: 260 }}
@@ -164,6 +178,19 @@ export default function PostsPage() {
               </List.Item>
             )}
           />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <Pagination
+              current={page}
+              pageSize={size}
+              total={total}
+              showSizeChanger
+              pageSizeOptions={[5, 10, 20]}
+              onChange={(nextPage, nextSize) => {
+                setPage(nextPage)
+                setSize(nextSize)
+              }}
+            />
+          </div>
         </Card>
       </Col>
       <Col xs={24} lg={8}>

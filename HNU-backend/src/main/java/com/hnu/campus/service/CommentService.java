@@ -12,5 +12,7 @@ public interface CommentService {
 
     void deleteComment(Long commentId, Long userId);
 
+    void deleteCommentAsAdmin(Long commentId, Long adminId);
+
     List<CommentDTO> getCommentTree(Long postId, Long currentUserId);
 }

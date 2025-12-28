@@ -1,4 +1,4 @@
-import { Card, List, Space, Tag, Typography, message } from 'antd'
+import { Card, List, Popconfirm, Space, Tag, Typography, message } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
@@ -29,6 +29,17 @@ export default function MyPostsPage() {
     fetchMyPosts()
   }, [])
 
+  const handleDelete = async (postId: number) => {
+    try {
+      await api.delete(`/api/v1/posts/${postId}`)
+      message.success('删除成功')
+      fetchMyPosts()
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '删除失败'
+      message.error(msg)
+    }
+  }
+
   return (
     <Card title="我的帖子">
       <List
@@ -42,6 +53,14 @@ export default function MyPostsPage() {
               <Space>
                 <span>浏览 {item.viewCount}</span>
                 <span>点赞 {item.likeCount}</span>
+                <Popconfirm
+                  title="确认删除该帖子？"
+                  okText="删除"
+                  cancelText="取消"
+                  onConfirm={() => handleDelete(item.id)}
+                >
+                  <a>删除</a>
+                </Popconfirm>
               </Space>
             }
           >

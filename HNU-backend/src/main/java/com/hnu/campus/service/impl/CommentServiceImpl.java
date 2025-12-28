@@ -14,6 +14,8 @@ import com.hnu.campus.mapper.CommentLikeMapper;
 import com.hnu.campus.mapper.CommentMapper;
 import com.hnu.campus.mapper.PostMapper;
 import com.hnu.campus.mapper.UserMapper;
+import com.hnu.campus.security.CurrentUserContext;
+import com.hnu.campus.enums.UserRole;
 import com.hnu.campus.service.CommentService;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class CommentServiceImpl implements CommentService {
+    private static final String DELETED_PLACEHOLDER = "该评论用户已自行删除";
     private final CommentMapper commentMapper;
     private final CommentLikeMapper commentLikeMapper;
     private final UserMapper userMapper;
@@ -122,6 +125,25 @@ public class CommentServiceImpl implements CommentService {
         UpdateWrapper<Comment> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", commentId)
                 .set("status", "deleted")
+                .set("content", DELETED_PLACEHOLDER)
+                .set("update_time", LocalDateTime.now());
+        commentMapper.update(null, updateWrapper);
+    }
+
+    @Override
+    public void deleteCommentAsAdmin(Long commentId, Long adminId) {
+        String role = CurrentUserContext.getRole();
+        if (!UserRole.ADMIN.getCode().equals(role)) {
+            throw new BusinessException(403, "需要管理员权限");
+        }
+        Comment comment = commentMapper.selectById(commentId);
+        if (comment == null) {
+            throw new BusinessException(404, "评论不存在");
+        }
+        UpdateWrapper<Comment> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", commentId)
+                .set("status", "deleted")
+                .set("content", DELETED_PLACEHOLDER)
                 .set("update_time", LocalDateTime.now());
         commentMapper.update(null, updateWrapper);
     }
@@ -130,7 +152,6 @@ public class CommentServiceImpl implements CommentService {
     public List<CommentDTO> getCommentTree(Long postId, Long currentUserId) {
         List<Comment> comments = commentMapper.selectList(new LambdaQueryWrapper<Comment>()
                 .eq(Comment::getPostId, postId)
-                .eq(Comment::getStatus, "normal")
                 .orderByAsc(Comment::getCreateTime));
         if (comments.isEmpty()) {
             return List.of();
@@ -163,7 +184,11 @@ public class CommentServiceImpl implements CommentService {
             dto.setUserId(comment.getUserId());
             User user = userMap.get(comment.getUserId());
             dto.setUserNickname(user == null ? null : user.getNickname());
-            dto.setContent(comment.getContent());
+            if (!"normal".equals(comment.getStatus())) {
+                dto.setContent(DELETED_PLACEHOLDER);
+            } else {
+                dto.setContent(comment.getContent());
+            }
             dto.setParentId(comment.getParentId());
             dto.setLikeCount(comment.getLikeCount());
             dto.setIsLiked(likedCommentIds.contains(comment.getId()));

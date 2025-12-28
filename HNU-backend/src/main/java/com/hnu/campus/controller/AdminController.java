@@ -65,4 +65,25 @@ public class AdminController {
         Long adminId = CurrentUserContext.getUserId();
         return ApiResponse.success(adminService.getPendingUsers(adminId, page, size));
     }
+
+    @GetMapping("/users")
+    @Operation(summary = "获取全部用户列表", description = "获取所有用户列表，支持分页")
+    @Parameter(name = "page", description = "页码，从1开始", example = "1")
+    @Parameter(name = "size", description = "每页数量", example = "10")
+    public ApiResponse<List<UserInfoDTO>> getAllUsers(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        Long adminId = CurrentUserContext.getUserId();
+        return ApiResponse.success(adminService.getAllUsers(adminId, page, size));
+    }
+
+    @DeleteMapping("/comments/{id}")
+    @Operation(summary = "删除评论", description = "管理员删除用户评论（逻辑删除）")
+    public ApiResponse<Void> deleteComment(
+            @Parameter(description = "评论ID", example = "1", required = true)
+            @PathVariable Long id) {
+        Long adminId = CurrentUserContext.getUserId();
+        adminService.deleteComment(adminId, id);
+        return ApiResponse.success("删除成功");
+    }
 }

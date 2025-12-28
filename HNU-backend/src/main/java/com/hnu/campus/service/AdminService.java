@@ -14,4 +14,8 @@ public interface AdminService {
     void muteUser(Long adminId, UserMuteDTO muteDTO);
 
     List<UserInfoDTO> getPendingUsers(Long adminId, Integer page, Integer size);
+
+    void deleteComment(Long adminId, Long commentId);
+
+    List<UserInfoDTO> getAllUsers(Long adminId, Integer page, Integer size);
 }

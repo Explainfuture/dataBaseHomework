@@ -14,6 +14,7 @@ import com.hnu.campus.mapper.PostMapper;
 import com.hnu.campus.mapper.UserMapper;
 import com.hnu.campus.security.CurrentUserContext;
 import com.hnu.campus.service.AdminService;
+import com.hnu.campus.service.CommentService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -23,10 +24,12 @@ import java.util.List;
 public class AdminServiceImpl implements AdminService {
     private final UserMapper userMapper;
     private final PostMapper postMapper;
+    private final CommentService commentService;
 
-    public AdminServiceImpl(UserMapper userMapper, PostMapper postMapper) {
+    public AdminServiceImpl(UserMapper userMapper, PostMapper postMapper, CommentService commentService) {
         this.userMapper = userMapper;
         this.postMapper = postMapper;
+        this.commentService = commentService;
     }
 
     @Override
@@ -80,6 +83,36 @@ public class AdminServiceImpl implements AdminService {
         Page<User> pageResult = userMapper.selectPage(
                 new Page<>(page, size),
                 new LambdaQueryWrapper<User>().eq(User::getAuthStatus, AuthStatus.PENDING.getCode())
+                        .orderByAsc(User::getCreateTime)
+        );
+        return pageResult.getRecords().stream().map(user -> {
+            UserInfoDTO dto = new UserInfoDTO();
+            dto.setId(user.getId());
+            dto.setPhone(user.getPhone());
+            dto.setNickname(user.getNickname());
+            dto.setStudentId(user.getStudentId());
+            dto.setCampusCardUrl(user.getCampusCardUrl());
+            dto.setAuthStatus(user.getAuthStatus());
+            dto.setRole(user.getRole());
+            dto.setIsMuted(user.getIsMuted());
+            dto.setCreateTime(user.getCreateTime());
+            return dto;
+        }).toList();
+    }
+
+    @Override
+    public void deleteComment(Long adminId, Long commentId) {
+        ensureAdmin();
+        commentService.deleteCommentAsAdmin(commentId, adminId);
+    }
+
+    @Override
+    public List<UserInfoDTO> getAllUsers(Long adminId, Integer page, Integer size) {
+        ensureAdmin();
+        Page<User> pageResult = userMapper.selectPage(
+                new Page<>(page, size),
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getAuthStatus, AuthStatus.APPROVED.getCode())
                         .orderByAsc(User::getCreateTime)
         );
         return pageResult.getRecords().stream().map(user -> {
