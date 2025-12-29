@@ -18,5 +18,8 @@ public class LoginDTO {
     @NotBlank(message = "密码不能为空")
     @Schema(description = "密码", example = "123456", requiredMode = RequiredMode.REQUIRED)
     private String password;
-}
 
+    @NotBlank(message = "验证码不能为空")
+    @Schema(description = "手机验证码", example = "123456", requiredMode = RequiredMode.REQUIRED)
+    private String verifyCode;
+}

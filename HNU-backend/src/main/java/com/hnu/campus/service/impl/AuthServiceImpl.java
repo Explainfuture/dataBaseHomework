@@ -73,7 +73,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponseDTO login(LoginDTO loginDTO) {
-        User user = userMapper.selectOne(new QueryWrapper<User>().eq("phone", loginDTO.getPhone()));
+        String phone = loginDTO.getPhone();
+        String key = VERIFY_CODE_PREFIX + phone;
+        String cachedCode = redisTemplate.opsForValue().get(key);
+        if (cachedCode == null || !cachedCode.equals(loginDTO.getVerifyCode())) {
+            throw new BusinessException(400, "验证码错误或已过期");
+        }
+
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("phone", phone));
         if (user == null) {
             throw new BusinessException(400, "手机号或密码错误");
         }
@@ -90,6 +97,7 @@ public class AuthServiceImpl implements AuthService {
         response.setUserId(user.getId());
         response.setNickname(user.getNickname());
         response.setRole(user.getRole());
+        redisTemplate.delete(key);
         return response;
     }
 
