@@ -1,13 +1,13 @@
 spring:
   application:
-    name: hnu-campus-platform
+    name: HNU_Campus
   
   # PostgreSQL 数据库配置
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/hnu_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:postgresql://localhost:5432/HNU_Campus?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: postgres
-    password: 1
+    password: 160225
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5

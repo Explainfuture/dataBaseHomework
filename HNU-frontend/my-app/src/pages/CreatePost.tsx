@@ -1,7 +1,8 @@
-import { Button, Card, Form, Input, Select, message } from 'antd'
+import { Button, Card, Form, Input, Select, message, App as AntApp } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ApiResponse } from '../api/client'
+import { useAuth } from '../store/auth'
 
 const categories = [
   { value: 1, label: '二手闲置' },
@@ -12,8 +13,10 @@ const categories = [
 ]
 
 export default function CreatePostPage() {
+  const { notification } = AntApp.useApp()
   const navigate = useNavigate()
   const [form] = Form.useForm()
+  const { token, user } = useAuth()
 
   const onFinish = async (values: {
     title: string
@@ -21,14 +24,27 @@ export default function CreatePostPage() {
     categoryId: number
     contactInfo?: string
   }) => {
+    if (!token) {
+      message.warning('请先登录')
+      return
+    }
     try {
       const res = await api.post<ApiResponse<number>>('/api/v1/posts', values)
       const payload = res as unknown as ApiResponse<number>
       message.success('发布成功')
       navigate(`/posts/${payload.data}`)
     } catch (error) {
-      const msg = error instanceof Error ? error.message : '发布失败'
-      message.error(msg)
+      const errorMsg = error instanceof Error ? error.message : '发布失败'
+      
+      if (errorMsg.includes('禁言')) {
+        notification.error({
+          message: '无法发布帖子',
+          description: '你已被禁言，请联系管理员处理',
+          placement: 'topRight',
+        })
+      } else {
+        message.error(errorMsg)
+      }
     }
   }
 

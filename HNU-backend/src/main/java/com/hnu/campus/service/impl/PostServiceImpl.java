@@ -55,6 +55,13 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Long createPost(Long userId, PostCreateDTO createDTO) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        if (Boolean.TRUE.equals(user.getIsMuted())) {
+            throw new BusinessException(403, "账号已被禁言");
+        }
         if (createDTO.getTitle() == null || createDTO.getTitle().length() < 4 || createDTO.getTitle().length() > 20) {
             throw new BusinessException(400, "标题长度必须为4-20字");
         }
