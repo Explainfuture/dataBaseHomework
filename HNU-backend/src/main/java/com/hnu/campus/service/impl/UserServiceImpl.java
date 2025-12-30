@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hnu.campus.dto.post.PostListDTO;
+import com.hnu.campus.dto.user.PasswordUpdateDTO;
 import com.hnu.campus.dto.user.UserInfoDTO;
 import com.hnu.campus.dto.user.UserUpdateDTO;
 import com.hnu.campus.entity.Post;
@@ -14,6 +15,7 @@ import com.hnu.campus.mapper.PostCategoryMapper;
 import com.hnu.campus.mapper.PostMapper;
 import com.hnu.campus.mapper.UserMapper;
 import com.hnu.campus.service.UserService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -28,11 +30,16 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PostMapper postMapper;
     private final PostCategoryMapper categoryMapper;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserMapper userMapper, PostMapper postMapper, PostCategoryMapper categoryMapper) {
+    public UserServiceImpl(UserMapper userMapper,
+                           PostMapper postMapper,
+                           PostCategoryMapper categoryMapper,
+                           BCryptPasswordEncoder passwordEncoder) {
         this.userMapper = userMapper;
         this.postMapper = postMapper;
         this.categoryMapper = categoryMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -79,6 +86,25 @@ public class UserServiceImpl implements UserService {
             updateWrapper.set("update_time", LocalDateTime.now());
             userMapper.update(null, updateWrapper);
         }
+    }
+
+    @Override
+    public void changePassword(Long userId, PasswordUpdateDTO passwordUpdateDTO) {
+        User existing = userMapper.selectById(userId);
+        if (existing == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        if (!passwordEncoder.matches(passwordUpdateDTO.getOldPassword(), existing.getPassword())) {
+            throw new BusinessException(400, "原密码错误");
+        }
+        if (!passwordUpdateDTO.getNewPassword().equals(passwordUpdateDTO.getConfirmPassword())) {
+            throw new BusinessException(400, "两次新密码不一致");
+        }
+        UpdateWrapper<User> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", userId)
+                .set("password", passwordEncoder.encode(passwordUpdateDTO.getNewPassword()))
+                .set("update_time", LocalDateTime.now());
+        userMapper.update(null, updateWrapper);
     }
 
     @Override

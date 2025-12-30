@@ -11,7 +11,7 @@ import {
   message,
   App as AntApp,
 } from 'antd'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ApiResponse } from '../api/client'
@@ -29,6 +29,7 @@ export default function PostDetailPage() {
   const [replyTo, setReplyTo] = useState<CommentItem | null>(null)
   const [form] = Form.useForm()
   const [useMock, setUseMock] = useState(false)
+  const fetchedIdRef = useRef<string | undefined>(undefined)
 
   const buildMockDetail = (postId: number): PostDetail | null => {
     const post = (mockPosts as PostDetail[]).find((item) => item.id === postId)
@@ -80,6 +81,11 @@ export default function PostDetailPage() {
   }
 
   useEffect(() => {
+    if (!id) return
+    if (fetchedIdRef.current === id) {
+      return
+    }
+    fetchedIdRef.current = id
     fetchDetail()
   }, [id])
 

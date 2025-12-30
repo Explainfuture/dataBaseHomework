@@ -68,6 +68,9 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public void muteUser(Long adminId, UserMuteDTO muteDTO) {
         ensureAdmin();
+        if (adminId != null && adminId.equals(muteDTO.getUserId())) {
+            throw new BusinessException(400, "不能禁言自己");
+        }
         User user = userMapper.selectById(muteDTO.getUserId());
         if (user == null) {
             throw new BusinessException(404, "用户不存在");

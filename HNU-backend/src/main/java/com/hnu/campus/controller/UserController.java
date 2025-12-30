@@ -3,6 +3,7 @@ package com.hnu.campus.controller;
 import com.hnu.campus.dto.common.ApiResponse;
 import com.hnu.campus.dto.post.PostListDTO;
 import com.hnu.campus.dto.user.UserInfoDTO;
+import com.hnu.campus.dto.user.PasswordUpdateDTO;
 import com.hnu.campus.dto.user.UserUpdateDTO;
 import com.hnu.campus.security.CurrentUserContext;
 import com.hnu.campus.service.UserService;
@@ -42,6 +43,14 @@ public class UserController {
         Long userId = CurrentUserContext.getUserId();
         userService.updateUserInfo(userId, updateDTO);
         return ApiResponse.success("修改成功");
+    }
+
+    @PutMapping("/me/password")
+    @Operation(summary = "修改密码", description = "修改当前登录用户密码")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody PasswordUpdateDTO passwordUpdateDTO) {
+        Long userId = CurrentUserContext.getUserId();
+        userService.changePassword(userId, passwordUpdateDTO);
+        return ApiResponse.success("密码修改成功");
     }
 
     @GetMapping("/me/posts")

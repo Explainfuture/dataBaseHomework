@@ -1,10 +1,13 @@
-import { Alert, Button, Card, Select, Space, Table, Tag, message } from 'antd'
+import { Alert, Button, Card, Select, Space, Table, Tag, message, App as AntApp } from 'antd'
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { ApiResponse } from '../api/client'
 import type { PendingUser } from '../api/types'
+import { useAuth } from '../store/auth'
 
 export default function AdminPendingPage() {
+  const { user } = useAuth()
+  const { notification } = AntApp.useApp()
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<PendingUser[]>([])
   const [mode, setMode] = useState<'pending' | 'all'>('all')
@@ -73,10 +76,20 @@ export default function AdminPendingPage() {
 
   const handleMute = async (userId: number, isMuted: boolean) => {
     try {
+      if (user?.userId === userId) {
+        notification.warning({
+          message: '操作无效',
+          description: '不能禁言自己',
+          placement: 'topRight',
+        })
+        return
+      }
       await api.post('/api/v1/admin/users/mute', { userId, isMuted })
-      const msg = isMuted ? '已禁言' : '已解禁'
-      message.success(msg)
-      setActionAlert(msg)
+      notification.success({
+        message: isMuted ? '禁言成功' : '解除成功',
+        description: isMuted ? '该用户已被禁言' : '该用户已恢复发言权限',
+        placement: 'topRight',
+      })
       fetchAll()
     } catch (error) {
       const msg = error instanceof Error ? error.message : '操作失败'
