@@ -1,4 +1,4 @@
-import {
+﻿import {
   Button,
   Card,
   Divider,
@@ -31,7 +31,7 @@ export default function PostDetailPage() {
   const [useMock, setUseMock] = useState(false)
   const fetchedIdRef = useRef<string | undefined>(undefined)
 
-  const buildMockDetail = (postId: number): PostDetail | null => {
+  /*const buildMockDetail = (postId: number): PostDetail | null => {
     const post = (mockPosts as PostDetail[]).find((item) => item.id === postId)
     if (!post) {
       return null
@@ -47,7 +47,7 @@ export default function PostDetailPage() {
       isLiked: false,
       comments,
     }
-  }
+  }*/
 
   const fetchDetail = async () => {
     if (!id) return
@@ -61,20 +61,20 @@ export default function PostDetailPage() {
         setDetail({ ...data, comments: data.comments || [] })
         return
       }
-      const mockDetail = buildMockDetail(Number(id))
+      /*const mockDetail = buildMockDetail(Number(id))
       if (mockDetail) {
         setUseMock(true)
         setDetail(mockDetail)
-      }
+      }*/
     } catch (error) {
-      const mockDetail = buildMockDetail(Number(id))
+      /*const mockDetail = buildMockDetail(Number(id))
       if (mockDetail) {
         setUseMock(true)
         setDetail(mockDetail)
       } else {
         const msg = error instanceof Error ? error.message : '加载失败'
         message.error(msg)
-      }
+      }*/
     } finally {
       setLoading(false)
     }
@@ -280,118 +280,204 @@ export default function PostDetailPage() {
     }
   }
 
-  const renderComment = (comment: CommentItem, depth = 0) => {
-    const isDeleted = comment.content === '该评论用户已自行删除'
+  const flattenReplies = (items: CommentItem[]): CommentItem[] => {
+    const result: CommentItem[] = []
+    const stack: CommentItem[] = [...items]
+    while (stack.length > 0) {
+      const current = stack.shift()
+      if (!current) continue
+      result.push(current)
+      if (current.replies && current.replies.length > 0) {
+        stack.unshift(...current.replies)
+      }
+    }
+    return result
+  }
+
+  const renderCommentActions = (comment: CommentItem, isDeleted: boolean) => {
     const canDelete =
       user && (user.role === 'ADMIN' || user.userId === comment.userId)
+    if (isDeleted) return null
     return (
-      <div key={comment.id} style={{ marginLeft: depth * 24, marginBottom: 16 }}>
-        <Card size="small" style={{ background: depth === 0 ? '#fff' : '#fafafa' }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Space>
-              <strong>{comment.userNickname || '匿名'}</strong>
-              {comment.parentUserNickname && (
-                <span style={{ color: '#888' }}>
-                  回复 {comment.parentUserNickname}
-                </span>
-              )}
-              <span style={{ color: '#888' }}>
-                {new Date(comment.createTime).toLocaleString()}
-              </span>
-              {isDeleted ? <Tag color="default">已删除</Tag> : null}
-            </Space>
-            <div>{comment.content}</div>
-            <Space>
-              {!isDeleted ? (
-                <Button size="small" onClick={() => handleCommentLike(comment.id)}>
-                  {comment.isLiked ? '已赞' : '点赞'} {comment.likeCount}
-                </Button>
-              ) : null}
-              {!isDeleted ? (
-                <Button size="small" type="link" onClick={() => setReplyTo(comment)}>
-                  回复
-                </Button>
-              ) : null}
-              {canDelete && (
-                <Button
-                  size="small"
-                  danger
-                  onClick={() => handleDeleteComment(comment.id, comment.userId)}
-                >
-                  删除
-                </Button>
-              )}
-            </Space>
+      <Space size={12}>
+        <Button size="small" type="link" onClick={() => handleCommentLike(comment.id)}>
+          {comment.isLiked ? '已赞' : '点赞'} {comment.likeCount}
+        </Button>
+        <Button size="small" type="link" onClick={() => setReplyTo(comment)}>
+          回复
+        </Button>
+        {canDelete ? (
+          <Button
+            size="small"
+            danger
+            type="link"
+            onClick={() => handleDeleteComment(comment.id, comment.userId)}
+          >
+            删除
+          </Button>
+        ) : null}
+      </Space>
+    )
+  }
+
+  const renderRootComment = (comment: CommentItem) => {
+    const isDeleted = comment.content === '该评论用户已自行删除'
+    const replies = comment.replies ? flattenReplies(comment.replies) : []
+    return (
+      <div style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+          <Space size={8} wrap>
+            <Typography.Text strong>{comment.userNickname || '匿名'}</Typography.Text>
+            {comment.parentUserNickname ? (
+              <Typography.Text type="secondary">
+                回复 @{comment.parentUserNickname}
+              </Typography.Text>
+            ) : null}
+            {isDeleted ? <Tag color="default">已删除</Tag> : null}
           </Space>
-        </Card>
-        {comment.replies?.map((child) => renderComment(child, depth + 1))}
+          <Typography.Text type="secondary">
+            {new Date(comment.createTime).toLocaleString()}
+          </Typography.Text>
+        </div>
+        <Typography.Paragraph style={{ margin: '8px 0' }} type={isDeleted ? 'secondary' : undefined}>
+          {comment.content}
+        </Typography.Paragraph>
+        {renderCommentActions(comment, isDeleted)}
+
+        {replies.length > 0 ? (
+          <div
+            style={{
+              marginTop: 12,
+              paddingLeft: 16,
+              borderLeft: '2px solid #f0f0f0',
+            }}
+          >
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              {replies.map((reply) => {
+                const replyDeleted = reply.content === '该评论用户已自行删除'
+                return (
+                  <div key={reply.id} style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                      <Space size={8} wrap>
+                        <Typography.Text strong>
+                          {reply.userNickname || '匿名'}
+                        </Typography.Text>
+                        {reply.parentUserNickname ? (
+                          <Typography.Text type="secondary">
+                            回复 @{reply.parentUserNickname}
+                          </Typography.Text>
+                        ) : null}
+                        {replyDeleted ? <Tag color="default">已删除</Tag> : null}
+                      </Space>
+                      <Typography.Text type="secondary">
+                        {new Date(reply.createTime).toLocaleString()}
+                      </Typography.Text>
+                    </div>
+                    <Typography.Paragraph
+                      style={{ margin: '8px 0' }}
+                      type={replyDeleted ? 'secondary' : undefined}
+                    >
+                      {reply.content}
+                    </Typography.Paragraph>
+                    {renderCommentActions(reply, replyDeleted)}
+                  </div>
+                )
+              })}
+            </Space>
+          </div>
+        ) : null}
       </div>
     )
   }
 
   if (!detail) {
-    return <Card loading={loading}>加载中...</Card>
+    return (
+      <div style={{ maxWidth: 960, margin: '24px auto', padding: '0 16px' }}>
+        <Card loading={loading}>加载中...</Card>
+      </div>
+    )
   }
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+    <div style={{ maxWidth: 960, margin: '24px auto', padding: '0 16px' }}>
       <Card loading={loading}>
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Typography.Title level={3}>{detail.title}</Typography.Title>
-          <Space wrap>
-            <span>作者：{detail.authorNickname || '匿名'}</span>
-            <span>分类：{detail.categoryName || '未分类'}</span>
-            <span>发布时间：{new Date(detail.createTime).toLocaleString()}</span>
-            {detail.contactInfo ? (
-              <Tag color="blue">联系方式：{detail.contactInfo}</Tag>
-            ) : null}
-            {useMock ? <Tag color="orange">模拟数据</Tag> : null}
-          </Space>
-          <Typography.Paragraph>{detail.content}</Typography.Paragraph>
-          <Space>
-            <Button type={detail.isLiked ? 'primary' : 'default'} onClick={handleToggleLike}>
-              {detail.isLiked ? '已点赞' : '点赞'} {detail.likeCount}
+        <Typography.Title level={3} style={{ marginBottom: 8 }}>
+          {detail.title}
+        </Typography.Title>
+        <Space wrap>
+          <Typography.Text type="secondary">
+            作者：{detail.authorNickname || '匿名'}
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            分类：{detail.categoryName || '未分类'}
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            发布时间：{new Date(detail.createTime).toLocaleString()}
+          </Typography.Text>
+          {detail.contactInfo ? (
+            <Typography.Text type="secondary">联系方式：{detail.contactInfo}</Typography.Text>
+          ) : null}
+          {useMock ? <Tag color="orange">模拟数据</Tag> : null}
+        </Space>
+        <Divider style={{ margin: '12px 0' }} />
+        <Typography.Paragraph style={{ fontSize: 15, lineHeight: 1.8 }}>
+          {detail.content}
+        </Typography.Paragraph>
+        <Divider style={{ margin: '12px 0' }} />
+        <Space wrap>
+          <Button type={detail.isLiked ? 'primary' : 'default'} onClick={handleToggleLike}>
+            {detail.isLiked ? '已点赞' : '点赞'} {detail.likeCount}
+          </Button>
+          <Button type="default">评论 {detail.comments?.length ?? 0}</Button>
+          <Typography.Text type="secondary">浏览 {detail.viewCount}</Typography.Text>
+          {user && (user.role === 'ADMIN' || user.userId === detail.authorId) ? (
+            <Button danger onClick={handleDeletePost}>
+              删除帖子
             </Button>
-            <Tag color="geekblue">浏览 {detail.viewCount}</Tag>
-            {user && (user.role === 'ADMIN' || user.userId === detail.authorId) ? (
-              <Button danger onClick={handleDeletePost}>
-                删除帖子
-              </Button>
-            ) : null}
-          </Space>
+          ) : null}
         </Space>
       </Card>
 
-      <Card title="发表评论">
-        {replyTo && (
-          <Space style={{ marginBottom: 12 }}>
-            <Tag color="blue">回复 {replyTo.userNickname || '匿名'}</Tag>
-            <Button size="small" onClick={() => setReplyTo(null)}>
+      <Card title="发表评论" style={{ marginTop: 16 }}>
+        {replyTo ? (
+          <Space style={{ marginBottom: 12 }} wrap>
+            <Typography.Text type="secondary">
+              回复 @{replyTo.userNickname || '匿名'}
+            </Typography.Text>
+            <Button size="small" type="link" onClick={() => setReplyTo(null)}>
               取消回复
             </Button>
           </Space>
-        )}
+        ) : null}
         <Form form={form} layout="vertical" onFinish={handleSubmitComment}>
           <Form.Item
             name="content"
             rules={[{ required: true, message: '请输入评论内容' }]}
           >
-            <Input.TextArea rows={4} placeholder="写下你的评论..." />
+            <Input.TextArea autoSize={{ minRows: 3, maxRows: 6 }} placeholder="写下你的评论..." />
           </Form.Item>
-          <Button type="primary" htmlType="submit">
-            提交评论
-          </Button>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <Button onClick={() => form.resetFields()}>清空</Button>
+              <Button type="primary" htmlType="submit">
+                提交评论
+              </Button>
+            </div>
+          </Form.Item>
         </Form>
       </Card>
 
-      <Card title="评论列表">
+      <Card title="评论列表" style={{ marginTop: 16 }}>
         <List
           dataSource={detail.comments || []}
-          renderItem={(item) => <List.Item key={item.id}>{renderComment(item)}</List.Item>}
+          renderItem={(item) => (
+            <List.Item key={item.id} style={{ width: '100%' }}>
+              {renderRootComment(item)}
+            </List.Item>
+          )}
           locale={{ emptyText: '暂无评论' }}
         />
       </Card>
-      <Divider />
-    </Space>
+    </div>
   )
 }

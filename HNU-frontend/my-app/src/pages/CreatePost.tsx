@@ -1,4 +1,4 @@
-import { Button, Card, Form, Input, Select, message } from 'antd'
+﻿import { Button, Card, Col, Divider, Form, Input, Row, Select, Typography, message } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ApiResponse } from '../api/client'
@@ -33,41 +33,79 @@ export default function CreatePostPage() {
   }
 
   return (
-    <Card title="发布新帖">
-      <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Form.Item
-          label="标题"
-          name="title"
-          rules={[
-            { required: true, message: '请输入标题' },
-            { min: 4, max: 20, message: '标题长度为4-20字' },
-          ]}
-        >
-          <Input placeholder="请输入标题" />
-        </Form.Item>
-        <Form.Item
-          label="分类"
-          name="categoryId"
-          rules={[{ required: true, message: '请选择分类' }]}
-        >
-          <Select placeholder="请选择分类" options={categories} />
-        </Form.Item>
-        <Form.Item
-          label="内容"
-          name="content"
-          rules={[{ required: true, message: '请输入内容' }]}
-        >
-          <Input.TextArea rows={6} placeholder="写下你的分享或需求..." />
-        </Form.Item>
-        <Form.Item label="联系方式" name="contactInfo">
-          <Input placeholder="选填：微信/电话等" />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit">
-            发布
-          </Button>
-        </Form.Item>
-      </Form>
+    <Card
+      title="发布新帖"
+      style={{ maxWidth: 880, margin: '24px auto' }}
+    >
+      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+        <Form form={form} layout="vertical" onFinish={onFinish} requiredMark="optional">
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            基本信息
+          </Typography.Title>
+          <Row gutter={16}>
+            <Col xs={24} md={14}>
+              <Form.Item
+                //label="标题"
+                name="title"
+                style={{marginTop: 20}}
+                rules={[
+                  { required: true, message: '请输入标题' },
+                  { min: 4, max: 20, message: '标题长度为4-20字' },
+                ]}
+              >
+                <Input placeholder="请输入标题" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={10}>
+              <Form.Item
+                //label="分类"
+                style={{marginTop: 20}}
+                name="categoryId"
+                rules={[{ required: true, message: '请选择分类' }]}
+              >
+                <Select placeholder="请选择分类" options={categories} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider style={{ margin: '8px 0 16px' }} />
+
+          <Typography.Title level={5} style={{ margin: 0 }}>
+          内容
+          </Typography.Title>
+          <Form.Item
+            //label="内容"
+            name="content"
+            style={{marginTop:20}}
+            rules={[{ required: true, message: '请输入内容' }]}
+          >
+            <Input.TextArea rows={8} placeholder="写下你的分享或需求..." />
+          </Form.Item>
+
+          <Divider style={{ margin: '8px 0 16px' }} />
+
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            联系方式
+          </Typography.Title>
+          <Form.Item 
+            //label="联系方式" 
+            style={{marginTop: 20}}
+            name="contactInfo">
+            <Input placeholder="选填：微信/电话等" />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <Button type="primary" htmlType="submit">
+                发布
+              </Button>
+              <Button htmlType='button' onClick={()=>form.resetFields()}>
+                重置
+              </Button>
+            </div>
+          </Form.Item>
+        </Form>
+      </div>
     </Card>
   )
 }

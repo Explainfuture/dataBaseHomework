@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Select, Space, Table, Tag, message, App as AntApp } from 'antd'
+import { Button, Card, Select, Space, Table, Tag, message, App as AntApp } from 'antd'
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { ApiResponse } from '../api/client'
@@ -11,7 +11,6 @@ export default function AdminPendingPage() {
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<PendingUser[]>([])
   const [mode, setMode] = useState<'pending' | 'all'>('all')
-  const [actionAlert, setActionAlert] = useState<string | null>(null)
 
   const fetchPending = async () => {
     setLoading(true)
@@ -53,24 +52,22 @@ export default function AdminPendingPage() {
     }
   }, [mode])
 
-  useEffect(() => {
-    if (!actionAlert) return
-    const timer = setTimeout(() => {
-      setActionAlert(null)
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [actionAlert])
 
   const handleReview = async (userId: number, authStatus: 'approved' | 'rejected') => {
     try {
       await api.post('/api/v1/admin/auth/review', { userId, authStatus })
-      const msg = authStatus === 'approved' ? '审核已通过' : '审核已拒绝'
-      message.success(msg)
-      setActionAlert(msg)
+
+      notification.success({
+        message: authStatus === 'approved'? '审核已通过' : '审核已拒绝',
+        placement: 'topRight',
+      })
+
       fetchPending()
     } catch (error) {
-      const msg = error instanceof Error ? error.message : '操作失败'
-      message.error(msg)
+      notification.error({
+        message: '操作失败',
+        placement: 'topRight',
+      })
     }
   }
 
@@ -112,14 +109,6 @@ export default function AdminPendingPage() {
         />
       }
     >
-      {actionAlert ? (
-        <Alert
-          type="success"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={actionAlert}
-        />
-      ) : null}
       <Table
         rowKey="id"
         loading={loading}
@@ -134,11 +123,14 @@ export default function AdminPendingPage() {
             dataIndex: 'campusCardUrl',
             render: (value: string | undefined) =>
               value ? (
+                //将tag附上传入的连接，单独的一个查看很丑
                 <a href={value} target="_blank" rel="noreferrer">
-                  查看
+                  <Tag color="green">已提交</Tag>
                 </a>
               ) : (
-                <Tag>未提交</Tag>
+                //todo 将这个tag增加样式，红色表示未提交
+                <Tag color="magenta">未提交</Tag>
+                //<Tag>未提交</Tag>
               ),
           },
           {

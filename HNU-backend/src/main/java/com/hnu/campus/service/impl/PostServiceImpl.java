@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 public class PostServiceImpl implements PostService {
     private static final String HOT_POST_KEY = "hot:posts";
     private static final String VIEW_KEY_PREFIX = "post:view:";
+    private static final String VIEW_DEDUP_PREFIX = "post:view:dedup:";
 
     private final PostMapper postMapper;
     private final PostCategoryMapper categoryMapper;
@@ -168,9 +169,29 @@ public class PostServiceImpl implements PostService {
         PostCategory category = categoryMapper.selectById(post.getCategoryId());
 
         String viewKey = VIEW_KEY_PREFIX + postId;
-        Long delta = redisTemplate.opsForValue().increment(viewKey);
+        boolean shouldIncreaseView = true;
+        if (currentUserId != null) {
+            String dedupKey = VIEW_DEDUP_PREFIX + postId + ":" + currentUserId;
+            Boolean firstView = redisTemplate.opsForValue()
+                    .setIfAbsent(dedupKey, "1", Duration.ofMinutes(10));
+            shouldIncreaseView = Boolean.TRUE.equals(firstView);
+        }
+        long delta = 0;
+        if (shouldIncreaseView) {
+            Long inc = redisTemplate.opsForValue().increment(viewKey);
+            delta = inc == null ? 0 : inc;
+        } else {
+            String deltaText = redisTemplate.opsForValue().get(viewKey);
+            if (deltaText != null) {
+                try {
+                    delta = Long.parseLong(deltaText);
+                } catch (NumberFormatException ignored) {
+                    delta = 0;
+                }
+            }
+        }
         int baseView = post.getViewCount() == null ? 0 : post.getViewCount();
-        int viewCount = baseView + (delta == null ? 0 : delta.intValue());
+        int viewCount = baseView + (int) delta;
         int likeCount = post.getLikeCount() == null ? 0 : post.getLikeCount();
         BigDecimal hotScore = BigDecimal.valueOf(viewCount * 0.3 + likeCount * 0.7);
         redisTemplate.opsForZSet().add(HOT_POST_KEY, String.valueOf(postId), hotScore.doubleValue());

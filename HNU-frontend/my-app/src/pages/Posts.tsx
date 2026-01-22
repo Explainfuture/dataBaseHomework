@@ -1,10 +1,9 @@
-import { Card, Col, Input, List, Pagination, Row, Select, Space, Tag, Typography, message } from 'antd'
+﻿import { Card, Col, Input, List, Pagination, Row, Select, Space, Tag, Typography, message } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { ApiResponse } from '../api/client'
 import type { PostListItem } from '../api/types'
-import mockPosts from '../mock/posts.json'
 
 const categories = [
   { value: 1, label: '二手闲置' },
@@ -20,7 +19,6 @@ export default function PostsPage() {
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [categoryId, setCategoryId] = useState<number | undefined>()
-  const [useMock, setUseMock] = useState(false)
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(10)
   const [total, setTotal] = useState(0)
@@ -39,14 +37,10 @@ export default function PostsPage() {
         })
         const payload = res as unknown as ApiResponse<PostListItem[]>
         const list = payload.data
+        setPosts(list)
         if (list.length === 0) {
-          setUseMock(true)
-          const mockList = filterMockPosts()
-          setPosts(mockList.slice((page - 1) * size, page * size))
-          setTotal(mockList.length)
+          setTotal(page * size)
         } else {
-          setUseMock(false)
-          setPosts(list)
           setTotal(page * size + (list.length < size ? 0 : size))
         }
       } else {
@@ -55,24 +49,18 @@ export default function PostsPage() {
         })
         const payload = res as unknown as ApiResponse<PostListItem[]>
         const list = payload.data
+        setPosts(list)
         if (list.length === 0) {
-          setUseMock(true)
-          const mockList = filterMockPosts()
-          setPosts(mockList.slice((page - 1) * size, page * size))
-          setTotal(mockList.length)
+          setTotal(page * size)
         } else {
-          setUseMock(false)
-          setPosts(list)
           setTotal(page * size + (list.length < size ? 0 : size))
         }
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : '加载失败'
       message.error(msg)
-      setUseMock(true)
-      const mockList = filterMockPosts()
-      setPosts(mockList.slice((page - 1) * size, page * size))
-      setTotal(mockList.length)
+      setPosts([])
+      setTotal(page * size)
     } finally {
       setLoading(false)
     }
@@ -82,15 +70,11 @@ export default function PostsPage() {
     try {
       const res = await api.get<ApiResponse<PostListItem[]>>('/api/v1/posts/hot')
       const payload = res as unknown as ApiResponse<PostListItem[]>
-      if (payload.data.length === 0) {
-        setHotPosts(mockPosts.slice(0, 10))
-      } else {
-        setHotPosts(payload.data)
-      }
+      setHotPosts(payload.data)
     } catch (error) {
       const msg = error instanceof Error ? error.message : '热搜加载失败'
       message.error(msg)
-      setHotPosts(mockPosts.slice(0, 10))
+      setHotPosts([])
     }
   }
 
@@ -107,21 +91,6 @@ export default function PostsPage() {
     const category = categories.find((item) => item.value === categoryId)
     return category ? category.label : null
   }, [categoryId])
-
-  const filterMockPosts = () => {
-    const text = keyword.trim()
-    let list = mockPosts as PostListItem[]
-    if (categoryId) {
-      list = list.filter((item) => item.categoryId === categoryId)
-    }
-    if (text) {
-      list = list.filter(
-        (item) =>
-          item.title.includes(text) || item.contentSummary.includes(text),
-      )
-    }
-    return list
-  }
 
   return (
     <Row gutter={24}>
@@ -148,12 +117,12 @@ export default function PostsPage() {
               style={{ width: 260 }}
             />
             {categoryTag ? <Tag color="blue">{categoryTag}</Tag> : null}
-            {useMock ? <Tag color="orange">当前展示模拟数据</Tag> : null}
           </Space>
           <List
             itemLayout="vertical"
             dataSource={posts}
             loading={loading}
+            locale={{ emptyText: '暂无帖子' }}
             renderItem={(item) => (
               <List.Item
                 key={item.id}
@@ -197,6 +166,7 @@ export default function PostsPage() {
         <Card title="热搜榜">
           <List
             dataSource={hotPosts}
+            locale={{ emptyText: '暂无热搜' }}
             renderItem={(item, index) => (
               <List.Item key={item.id}>
                 <Space>
