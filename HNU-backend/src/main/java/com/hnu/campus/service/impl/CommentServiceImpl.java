@@ -17,7 +17,9 @@ import com.hnu.campus.mapper.UserMapper;
 import com.hnu.campus.security.CurrentUserContext;
 import com.hnu.campus.enums.UserRole;
 import com.hnu.campus.service.CommentService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -78,39 +80,42 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Transactional
     public boolean toggleLike(Long commentId, Long userId) {
         Comment comment = commentMapper.selectById(commentId);
         if (comment == null || !"normal".equals(comment.getStatus())) {
             throw new BusinessException(404, "评论不存在");
         }
-        QueryWrapper<CommentLike> wrapper = new QueryWrapper<CommentLike>()
-                .eq("comment_id", commentId)
-                .eq("user_id", userId);
-        CommentLike existing = commentLikeMapper.selectOne(wrapper);
-        int currentLike = comment.getLikeCount() == null ? 0 : comment.getLikeCount();
-        if (existing != null) {
-            commentLikeMapper.deleteById(existing.getId());
-            int newLike = Math.max(0, currentLike - 1);
-            UpdateWrapper<Comment> updateWrapper = new UpdateWrapper<>();
-            updateWrapper.eq("id", commentId)
-                    .set("like_count", newLike)
+        try {
+            CommentLike like = CommentLike.builder()
+                    .commentId(commentId)
+                    .userId(userId)
+                    .createTime(LocalDateTime.now())
+                    .build();
+            commentLikeMapper.insert(like);
+
+            UpdateWrapper<Comment> incWrapper = new UpdateWrapper<>();
+            incWrapper.eq("id", commentId)
+                    .eq("status", "normal")
+                    .setSql("like_count = like_count + 1")
                     .set("update_time", LocalDateTime.now());
-            commentMapper.update(null, updateWrapper);
+            commentMapper.update(null, incWrapper);
+            return true;
+        } catch (DataIntegrityViolationException ex) {
+            int deleted = commentLikeMapper.delete(new QueryWrapper<CommentLike>()
+                    .eq("comment_id", commentId)
+                    .eq("user_id", userId));
+            if (deleted > 0) {
+                UpdateWrapper<Comment> decWrapper = new UpdateWrapper<>();
+                decWrapper.eq("id", commentId)
+                        .eq("status", "normal")
+                        .setSql("like_count = GREATEST(like_count - 1, 0)")
+                        .set("update_time", LocalDateTime.now());
+                commentMapper.update(null, decWrapper);
+                return false;
+            }
             return false;
         }
-        CommentLike like = CommentLike.builder()
-                .commentId(commentId)
-                .userId(userId)
-                .createTime(LocalDateTime.now())
-                .build();
-        commentLikeMapper.insert(like);
-        int newLike = currentLike + 1;
-        UpdateWrapper<Comment> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", commentId)
-                .set("like_count", newLike)
-                .set("update_time", LocalDateTime.now());
-        commentMapper.update(null, updateWrapper);
-        return true;
     }
 
     @Override

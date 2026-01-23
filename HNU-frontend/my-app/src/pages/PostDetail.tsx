@@ -92,6 +92,10 @@ export default function PostDetailPage() {
   const handleToggleLike = async () => {
     if (!id) return
     if (!token) {
+      notification.warning({
+        message: '请先登录',
+        placement: 'topRight'
+      })
       message.warning('请先登录')
       return
     }
@@ -118,6 +122,10 @@ export default function PostDetailPage() {
   const handleDeletePost = async () => {
     if (!id) return
     if (!token) {
+      notification.warning({
+        message: '请先登录',
+        placement: 'topRight'
+      })
       message.warning('请先登录')
       return
     }
@@ -132,6 +140,10 @@ export default function PostDetailPage() {
       } else {
         await api.delete(`/api/v1/posts/${id}`)
       }
+      notification.success({
+        message: '删除成功',
+        placement: 'topRight'
+      })
       message.success('删除成功')
       window.location.href = '/'
     } catch (error) {
@@ -142,6 +154,10 @@ export default function PostDetailPage() {
 
   const handleCommentLike = async (commentId: number) => {
     if (!token) {
+      notification.warning({
+        message: '请先登录',
+        placement: 'topRight'
+      })
       message.warning('请先登录')
       return
     }
@@ -177,6 +193,10 @@ export default function PostDetailPage() {
 
   const handleDeleteComment = async (commentId: number, commentUserId: number) => {
     if (!token) {
+      notification.warning({
+        message: '请先登录',
+        placement: 'topRight'
+      })
       message.warning('请先登录')
       return
     }
@@ -216,6 +236,10 @@ export default function PostDetailPage() {
   const handleSubmitComment = async (values: { content: string }) => {
     if (!id) return
     if (!token) {
+      notification.warning({
+        message: '请先登录',
+        placement: 'topRight'
+      })
       message.warning('请先登录')
       return
     }
