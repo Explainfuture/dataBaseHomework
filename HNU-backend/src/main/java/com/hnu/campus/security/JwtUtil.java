@@ -13,26 +13,27 @@ import java.util.Date;
 @Component
 public class JwtUtil {
     private final SecretKey secretKey;
-    private final long expireSeconds;
+    private final long accessExpireSeconds;
     private final String issuer;
 
     public JwtUtil(@Value("${jwt.secret}") String secret,
-                   @Value("${jwt.expire-seconds:86400}") long expireSeconds,
+                   @Value("${jwt.access-expire-seconds:1800}") long accessExpireSeconds,
                    @Value("${jwt.issuer:hnu-campus}") String issuer) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expireSeconds = expireSeconds;
+        this.accessExpireSeconds = accessExpireSeconds;
         this.issuer = issuer;
     }
 
-    public String generateToken(Long userId, String role) {
+    public String generateToken(Long userId, String role, Long tokenVersion) {
         Date now = new Date();
-        Date expireAt = new Date(now.getTime() + expireSeconds * 1000);
+        Date expireAt = new Date(now.getTime() + accessExpireSeconds * 1000);
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .issuer(issuer)
                 .issuedAt(now)
                 .expiration(expireAt)
                 .claim("role", role)
+                .claim("ver", tokenVersion)
                 .signWith(secretKey)
                 .compact();
     }
@@ -52,5 +53,24 @@ public class JwtUtil {
     public String getRole(Claims claims) {
         Object role = claims.get("role");
         return role == null ? null : role.toString();
+    }
+
+    public Long getTokenVersion(Claims claims) {
+        Object version = claims.get("ver");
+        if (version == null) {
+            return null;
+        }
+        if (version instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.valueOf(version.toString());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    public long getAccessExpireSeconds() {
+        return accessExpireSeconds;
     }
 }

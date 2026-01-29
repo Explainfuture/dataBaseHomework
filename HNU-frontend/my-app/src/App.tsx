@@ -12,7 +12,10 @@ import MyPostsPage from './pages/MyPosts'
 import ProfilePage from './pages/Profile'
 
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { token } = useAuth()
+  const { token, loading } = useAuth()
+  if (loading) {
+    return null
+  }
   if (!token) {
     return <Navigate to="/login" replace />
   }
@@ -20,7 +23,10 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function RequireAdmin({ children }: { children: ReactNode }) {
-  const { token, user } = useAuth()
+  const { token, user, loading } = useAuth()
+  if (loading) {
+    return null
+  }
   if (!token) {
     return <Navigate to="/login" replace />
   }

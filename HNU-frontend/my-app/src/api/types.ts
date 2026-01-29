@@ -1,5 +1,6 @@
 export type LoginResponse = {
   token: string
+  expiresIn?: number
   userId: number
   nickname: string
   role: string

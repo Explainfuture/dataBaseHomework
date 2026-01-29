@@ -15,21 +15,33 @@ import com.hnu.campus.mapper.UserMapper;
 import com.hnu.campus.security.CurrentUserContext;
 import com.hnu.campus.service.AdminService;
 import com.hnu.campus.service.CommentService;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AdminServiceImpl implements AdminService {
+    private static final String TOKEN_VERSION_PREFIX = "user_token_version:";
+    private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
+    private static final String REFRESH_SET_PREFIX = "refresh_set:";
+    private static final String ROLE_CACHE_PREFIX = "user_role:";
+
     private final UserMapper userMapper;
     private final PostMapper postMapper;
     private final CommentService commentService;
+    private final StringRedisTemplate redisTemplate;
 
-    public AdminServiceImpl(UserMapper userMapper, PostMapper postMapper, CommentService commentService) {
+    public AdminServiceImpl(UserMapper userMapper,
+                            PostMapper postMapper,
+                            CommentService commentService,
+                            StringRedisTemplate redisTemplate) {
         this.userMapper = userMapper;
         this.postMapper = postMapper;
         this.commentService = commentService;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
@@ -39,14 +51,14 @@ public class AdminServiceImpl implements AdminService {
         try {
             status = AuthStatus.fromCode(reviewDTO.getAuthStatus());
         } catch (IllegalArgumentException ex) {
-            throw new BusinessException(400, "审核状态不合法");
+            throw new BusinessException(400, "Invalid auth status");
         }
         if (status == AuthStatus.PENDING) {
-            throw new BusinessException(400, "审核状态不能为pending");
+            throw new BusinessException(400, "Auth status cannot be pending");
         }
         User user = userMapper.selectById(reviewDTO.getUserId());
         if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+            throw new BusinessException(404, "User not found");
         }
         user.setAuthStatus(status.getCode());
         user.setUpdateTime(LocalDateTime.now());
@@ -58,7 +70,7 @@ public class AdminServiceImpl implements AdminService {
         ensureAdmin();
         Post post = postMapper.selectById(postId);
         if (post == null) {
-            throw new BusinessException(404, "帖子不存在");
+            throw new BusinessException(404, "Post not found");
         }
         post.setStatus("deleted");
         post.setUpdateTime(LocalDateTime.now());
@@ -69,11 +81,11 @@ public class AdminServiceImpl implements AdminService {
     public void muteUser(Long adminId, UserMuteDTO muteDTO) {
         ensureAdmin();
         if (adminId != null && adminId.equals(muteDTO.getUserId())) {
-            throw new BusinessException(400, "不能禁言自己");
+            throw new BusinessException(400, "Cannot mute self");
         }
         User user = userMapper.selectById(muteDTO.getUserId());
         if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+            throw new BusinessException(404, "User not found");
         }
         user.setIsMuted(muteDTO.getIsMuted());
         user.setUpdateTime(LocalDateTime.now());
@@ -133,10 +145,37 @@ public class AdminServiceImpl implements AdminService {
         }).toList();
     }
 
+    @Override
+    public void kickUser(Long adminId, Long userId) {
+        ensureAdmin();
+        if (userId == null) {
+            throw new BusinessException(400, "User ID required");
+        }
+        if (adminId != null && adminId.equals(userId)) {
+            throw new BusinessException(400, "Cannot kick self");
+        }
+        revokeUserSessions(userId);
+    }
+
     private void ensureAdmin() {
         String role = CurrentUserContext.getRole();
         if (!UserRole.ADMIN.getCode().equals(role)) {
-            throw new BusinessException(403, "需要管理员权限");
+            throw new BusinessException(403, "Admin permission required");
         }
+    }
+
+    private void revokeUserSessions(Long userId) {
+        String versionKey = TOKEN_VERSION_PREFIX + userId;
+        redisTemplate.opsForValue().increment(versionKey);
+        redisTemplate.delete(ROLE_CACHE_PREFIX + userId);
+
+        String setKey = REFRESH_SET_PREFIX + userId;
+        Set<String> tokens = redisTemplate.opsForSet().members(setKey);
+        if (tokens != null) {
+            for (String token : tokens) {
+                redisTemplate.delete(REFRESH_TOKEN_PREFIX + token);
+            }
+        }
+        redisTemplate.delete(setKey);
     }
 }

@@ -4,21 +4,26 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- * 登录响应DTO
+ * Login response DTO.
  */
 @Data
-@Schema(description = "登录响应")
+@Schema(description = "Login response")
 public class LoginResponseDTO {
     @Schema(description = "JWT Token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     private String token;
 
-    @Schema(description = "用户ID", example = "1")
+    @Schema(description = "User ID", example = "1")
     private Long userId;
 
-    @Schema(description = "昵称", example = "张三")
+    @Schema(description = "Nickname", example = "Alice")
     private String nickname;
 
-    @Schema(description = "角色", example = "STUDENT")
+    @Schema(description = "Role", example = "STUDENT")
     private String role;
-}
 
+    @Schema(description = "Refresh Token", example = "f1b2c3d4e5f6...")
+    private String refreshToken;
+
+    @Schema(description = "Access token TTL (seconds)", example = "1800")
+    private Long expiresIn;
+}

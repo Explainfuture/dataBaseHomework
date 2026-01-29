@@ -2,7 +2,11 @@ package com.hnu.campus.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hnu.campus.dto.common.ApiResponse;
+import com.hnu.campus.entity.User;
+import com.hnu.campus.mapper.UserMapper;
 import io.jsonwebtoken.Claims;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpMethod;
@@ -12,14 +16,22 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String ROLE_CACHE_PREFIX = "user_role:";
+    private static final String TOKEN_VERSION_PREFIX = "user_token_version:";
 
     private final JwtUtil jwtUtil;
+    private final StringRedisTemplate redisTemplate;
+    private final UserMapper userMapper;
+
+    @Value("${jwt.role-cache-seconds:1800}")
+    private long roleCacheSeconds;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final List<PublicEndpoint> publicEndpoints = List.of(
@@ -33,8 +45,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             new PublicEndpoint(HttpMethod.GET, "/swagger-ui/**")
     );
 
-    public AuthInterceptor(JwtUtil jwtUtil) {
+    public AuthInterceptor(JwtUtil jwtUtil, StringRedisTemplate redisTemplate, UserMapper userMapper) {
         this.jwtUtil = jwtUtil;
+        this.redisTemplate = redisTemplate;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -52,7 +66,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             if (isPublic) {
                 return true;
             }
-            writeUnauthorized(response, "缺少认证信息");
+            writeUnauthorized(response, "Missing auth header");
             return false;
         }
 
@@ -60,14 +74,23 @@ public class AuthInterceptor implements HandlerInterceptor {
         try {
             Claims claims = jwtUtil.parseToken(token);
             Long userId = jwtUtil.getUserId(claims);
-            String role = jwtUtil.getRole(claims);
+            Long tokenVersion = jwtUtil.getTokenVersion(claims);
+            if (!isTokenVersionValid(userId, tokenVersion)) {
+                writeUnauthorized(response, "Invalid auth token");
+                return false;
+            }
+            String role = resolveRole(userId);
+            if (role == null) {
+                writeUnauthorized(response, "Invalid auth token");
+                return false;
+            }
             CurrentUserContext.setUser(userId, role);
             return true;
         } catch (Exception ex) {
             if (isPublic) {
                 return true;
             }
-            writeUnauthorized(response, "认证信息无效");
+            writeUnauthorized(response, "Invalid auth token");
             return false;
         }
     }
@@ -75,6 +98,44 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         CurrentUserContext.clear();
+    }
+
+    private String resolveRole(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        String key = ROLE_CACHE_PREFIX + userId;
+        String role = redisTemplate.opsForValue().get(key);
+        if (role != null && !role.isBlank()) {
+            return role;
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return null;
+        }
+        role = user.getRole();
+        if (role != null) {
+            redisTemplate.opsForValue().set(key, role, Duration.ofSeconds(roleCacheSeconds));
+        }
+        return role;
+    }
+
+    private boolean isTokenVersionValid(Long userId, Long tokenVersion) {
+        if (userId == null || tokenVersion == null) {
+            return false;
+        }
+        String key = TOKEN_VERSION_PREFIX + userId;
+        String current = redisTemplate.opsForValue().get(key);
+        if (current == null) {
+            redisTemplate.opsForValue().set(key, String.valueOf(tokenVersion));
+            return true;
+        }
+        try {
+            return Long.valueOf(current).equals(tokenVersion);
+        } catch (NumberFormatException ex) {
+            redisTemplate.opsForValue().set(key, String.valueOf(tokenVersion));
+            return true;
+        }
     }
 
     private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {

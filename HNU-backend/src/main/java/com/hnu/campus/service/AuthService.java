@@ -9,5 +9,9 @@ public interface AuthService {
 
     LoginResponseDTO login(LoginDTO loginDTO);
 
+    LoginResponseDTO refresh(String refreshToken);
+
+    void logout(String refreshToken);
+
     void sendVerifyCode(String phone);
 }

@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 管理员控制器
+ * Admin controller.
  */
 @RestController
 @RequestMapping("/api/v1/admin")
-@Tag(name = "管理员管理", description = "管理员审核、管理帖子、禁言用户等接口")
+@Tag(name = "Admin", description = "Admin review/moderation endpoints")
 @SecurityRequirement(name = "Bearer Authentication")
 public class AdminController {
     private final AdminService adminService;
@@ -30,35 +30,43 @@ public class AdminController {
     }
 
     @PostMapping("/auth/review")
-    @Operation(summary = "审核注册信息", description = "审核用户注册信息，通过或拒绝")
+    @Operation(summary = "Review auth", description = "Approve or reject registration")
     public ApiResponse<Void> reviewAuth(@Valid @RequestBody AuthReviewDTO reviewDTO) {
         Long adminId = CurrentUserContext.getUserId();
         adminService.reviewAuth(adminId, reviewDTO);
-        return ApiResponse.success("审核成功");
+        return ApiResponse.success("Review success");
     }
 
     @DeleteMapping("/posts/{id}")
-    @Operation(summary = "强制删除帖子", description = "管理员强制删除帖子（逻辑删除）")
+    @Operation(summary = "Delete post", description = "Force delete a post")
     public ApiResponse<Void> forceDeletePost(
-            @Parameter(description = "帖子ID", example = "1", required = true)
+            @Parameter(description = "Post ID", example = "1", required = true)
             @PathVariable Long id) {
         Long adminId = CurrentUserContext.getUserId();
         adminService.forceDeletePost(adminId, id);
-        return ApiResponse.success("删除成功");
+        return ApiResponse.success("Delete success");
     }
 
     @PostMapping("/users/mute")
-    @Operation(summary = "禁言用户", description = "管理员禁言或解除禁言用户")
+    @Operation(summary = "Mute user", description = "Mute or unmute a user")
     public ApiResponse<Void> muteUser(@Valid @RequestBody UserMuteDTO muteDTO) {
         Long adminId = CurrentUserContext.getUserId();
         adminService.muteUser(adminId, muteDTO);
-        return ApiResponse.success("操作成功");
+        return ApiResponse.success("Operation success");
+    }
+
+    @PostMapping("/users/kick")
+    @Operation(summary = "Kick user", description = "Force logout and revoke tokens")
+    public ApiResponse<Void> kickUser(@RequestParam Long userId) {
+        Long adminId = CurrentUserContext.getUserId();
+        adminService.kickUser(adminId, userId);
+        return ApiResponse.success("Kick success");
     }
 
     @GetMapping("/users/pending")
-    @Operation(summary = "获取待审核用户列表", description = "获取所有待审核的用户列表，支持分页")
-    @Parameter(name = "page", description = "页码，从1开始", example = "1")
-    @Parameter(name = "size", description = "每页数量", example = "10")
+    @Operation(summary = "Pending users", description = "List pending users")
+    @Parameter(name = "page", description = "Page index", example = "1")
+    @Parameter(name = "size", description = "Page size", example = "10")
     public ApiResponse<List<UserInfoDTO>> getPendingUsers(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -67,9 +75,9 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    @Operation(summary = "获取全部用户列表", description = "获取所有用户列表，支持分页")
-    @Parameter(name = "page", description = "页码，从1开始", example = "1")
-    @Parameter(name = "size", description = "每页数量", example = "10")
+    @Operation(summary = "All users", description = "List all users")
+    @Parameter(name = "page", description = "Page index", example = "1")
+    @Parameter(name = "size", description = "Page size", example = "10")
     public ApiResponse<List<UserInfoDTO>> getAllUsers(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -78,12 +86,12 @@ public class AdminController {
     }
 
     @DeleteMapping("/comments/{id}")
-    @Operation(summary = "删除评论", description = "管理员删除用户评论（逻辑删除）")
+    @Operation(summary = "Delete comment", description = "Delete a comment")
     public ApiResponse<Void> deleteComment(
-            @Parameter(description = "评论ID", example = "1", required = true)
+            @Parameter(description = "Comment ID", example = "1", required = true)
             @PathVariable Long id) {
         Long adminId = CurrentUserContext.getUserId();
         adminService.deleteComment(adminId, id);
-        return ApiResponse.success("删除成功");
+        return ApiResponse.success("Delete success");
     }
 }

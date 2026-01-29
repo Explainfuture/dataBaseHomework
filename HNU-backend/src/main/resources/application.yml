@@ -68,6 +68,8 @@ logging:
 
 jwt:
   secret: "change-this-to-a-long-random-secret-key"
-  expire-seconds: 86400
+  access-expire-seconds: 1800
+  refresh-expire-seconds: 2592000
+  role-cache-seconds: 1800
   issuer: "hnu-campus"
 

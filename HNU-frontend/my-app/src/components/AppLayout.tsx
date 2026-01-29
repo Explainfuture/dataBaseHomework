@@ -1,6 +1,7 @@
 import { Layout, Menu, Button, Space, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { api } from '../api/client'
 import { useAuth } from '../store/auth'
 
 const { Header, Content } = Layout
@@ -10,7 +11,7 @@ const menuItems = [{ key: '/', label: <Link to="/">首页</Link> }]
 export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, clearAuth } = useAuth()
+  const { user, clearAuth, loading } = useAuth()
 
   const selectedKey = location.pathname.startsWith('/admin')
     ? '/admin'
@@ -22,15 +23,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           ? '/users/me'
           : '/'
   const items = [...menuItems]
+  const isAdmin = !loading && user?.role === 'ADMIN'
   if (user) {
     items.push(
-      { key: '/posts/create', label: <Link to="/posts/create">发帖</Link> },
+      { key: '/posts/create', label: <Link to="/posts/create">发布</Link> },
       { key: '/users/me/posts', label: <Link to="/users/me/posts">我的帖子</Link> },
       { key: '/users/me', label: <Link to="/users/me">个人中心</Link> },
     )
   }
-  if (user?.role === 'ADMIN') {
-    items.push({ key: '/admin', label: <Link to="/admin/pending">管理后台</Link> })
+  if (isAdmin) {
+    items.push({ key: '/admin', label: <Link to="/admin/pending">后台管理</Link> })
   }
 
   return (
@@ -46,7 +48,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         >
           <Space>
             <Typography.Title level={4} style={{ color: '#fff', margin: 0 }}>
-              HNU 校园交流平台
+              HNU 校园服务平台
             </Typography.Title>
             <Menu
               theme="dark"
@@ -59,11 +61,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Space>
             {user ? (
               <>
-                <span style={{ color: '#fff' }}>你好，{user.nickname}</span>
+                <span style={{ color: '#fff' }}>你好,{user.nickname}</span>
                 <Button
-                  onClick={() => {
-                    clearAuth()
-                    navigate('/login')
+                  onClick={async () => {
+                    try {
+                      await api.post('/api/v1/auth/logout')
+                    } catch {
+                      // best-effort logout
+                    } finally {
+                      clearAuth()
+                      navigate('/login')
+                    }
                   }}
                 >
                   退出登录

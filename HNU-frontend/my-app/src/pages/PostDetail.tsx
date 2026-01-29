@@ -23,8 +23,9 @@ import { useAuth } from '../store/auth'
 export default function PostDetailPage() {
   const { notification } = AntApp.useApp()
   const { id } = useParams()
-  const { token, user } = useAuth()
+  const { token, user, loading: authLoading } = useAuth()
   const [detail, setDetail] = useState<PostDetail | null>(null)
+  const isAdmin = !authLoading && user?.role === 'ADMIN'
   const [loading, setLoading] = useState(false)
   const [replyTo, setReplyTo] = useState<CommentItem | null>(null)
   const [form] = Form.useForm()
@@ -135,7 +136,7 @@ export default function PostDetailPage() {
         window.location.href = '/'
         return
       }
-      if (user?.role === 'ADMIN') {
+      if (isAdmin) {
         await api.delete(`/api/v1/admin/posts/${id}`)
       } else {
         await api.delete(`/api/v1/posts/${id}`)
@@ -220,7 +221,7 @@ export default function PostDetailPage() {
         message.success('删除成功（模拟数据）')
         return
       }
-      if (user?.role === 'ADMIN' && user.userId !== commentUserId) {
+      if (isAdmin && user.userId !== commentUserId) {
         await api.delete(`/api/v1/admin/comments/${commentId}`)
       } else {
         await api.delete(`/api/v1/comments/${commentId}`)
@@ -320,7 +321,7 @@ export default function PostDetailPage() {
 
   const renderCommentActions = (comment: CommentItem, isDeleted: boolean) => {
     const canDelete =
-      user && (user.role === 'ADMIN' || user.userId === comment.userId)
+      user && (isAdmin || user.userId === comment.userId)
     if (isDeleted) return null
     return (
       <Space size={12}>
@@ -454,7 +455,7 @@ export default function PostDetailPage() {
           </Button>
           <Button type="default">评论 {detail.comments?.length ?? 0}</Button>
           <Typography.Text type="secondary">浏览 {detail.viewCount}</Typography.Text>
-          {user && (user.role === 'ADMIN' || user.userId === detail.authorId) ? (
+          {user && (isAdmin || user.userId === detail.authorId) ? (
             <Button danger onClick={handleDeletePost}>
               删除帖子
             </Button>

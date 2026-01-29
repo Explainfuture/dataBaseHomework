@@ -18,4 +18,6 @@ public interface AdminService {
     void deleteComment(Long adminId, Long commentId);
 
     List<UserInfoDTO> getAllUsers(Long adminId, Integer page, Integer size);
+
+    void kickUser(Long adminId, Long userId);
 }
